@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>find 🧑‍🦲</title>
+    <style>
+        body { 
+            margin: 0;
+
+            background-color: #E0FC61; 
+        }
+        .archive-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(204px, 1fr)); /* 최소 너비를 100px로 설정 */
+            grid-auto-flow: dense; /* 채워지는 방식 조정 */
+            padding: 0px;
+            gap:0px;
+            margin-top: 20px;
+            align-content: end; /* 상단 정렬 */
+            height: auto; /* 높이를 자동으로 설정하여 스크롤 가능 */
+            overflow-y: auto; /* 세로 스크롤이 가능하게 설정 */
+            transform: rotate(180deg); /* 컨테이너를 뒤집어 아래에서 위로 쌓이게 함 */
+        }
+        .image-pair {
+            margin-right: 5px;
+            margin-left: 5px;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative; /* 절대 위치 설정을 위한 기준 */
+            transform: rotate(180deg); /* 개별 이미지 쌍을 다시 뒤집음 */
+        }
+        /*             clip-path: polygon(0% 10px, 10px 0%, calc(100% - 10px) 0%, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0% calc(100% - 10px)); /* 모서리 10px 각지게 */
+         .screenshot-image {
+
+            transform: scaleX(-1); /* 좌우 반전 */
+
+            aspect-ratio: 3 / 4.5; /* 증명사진 비율 */
+            object-fit: cover; /* 비율 유지 */
+            width: 100%; /* 폭을 100%로 설정 */
+            margin-bottom: 2px;    
+        }
+        .random-image {
+            position: absolute; /* 부모에 상대적인 절대 위치 */
+            bottom: 20px; /* 아래로 30px 위치 */
+            left: 50%; /* 가운데 정렬 */
+            width: auto; /* 폭을 자동으로 설정 */
+            height: 6%; /* 높이를 설정 (필요 시 조정 가능) */
+            object-fit: contain; /* 비율 유지하며 완전히 보이게 */
+            transform: translate(-50%, 0); /* 중앙 정렬을 위한 변환 */
+            z-index: 1; /* 스크린샷 위에 위치하도록 설정 */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="archive-container" id="archiveContainer"></div>
+
+    <script>
+    // IndexedDB 데이터베이스와 이미지 불러오기 코드 추가
+    const archiveContainer = document.getElementById('archiveContainer');
+    let db;
+
+    // IndexedDB 데이터베이스 열기
+    const request = indexedDB.open('myDatabase', 1);
+
+    request.onsuccess = (event) => {
+        db = event.target.result;
+        clearDatabase(); // 데이터베이스 초기화 후 이미지 로드
+    };
+
+    request.onerror = (event) => {
+        console.error('데이터베이스 열기 실패:', event);
+    };
+
+
+
+    // 저장된 이미지 쌍을 로드하여 표시하는 함수
+    function loadImages() {
+        const transaction = db.transaction(['images'], 'readonly');
+        const objectStore = transaction.objectStore('images');
+        const request = objectStore.getAll(); // 모든 이미지 쌍 가져오기
+
+        request.onsuccess = (event) => {
+            const savedImages = event.target.result;
+            archiveContainer.innerHTML = ''; // 초기화
+            savedImages.forEach(pair => {
+                const pairDiv = document.createElement('div');
+                pairDiv.classList.add('image-pair');
+
+                const screenshot = document.createElement('img');
+                screenshot.src = pair.screenshot;
+                screenshot.alt = '스크린샷';
+                screenshot.classList.add('screenshot-image'); // 클래스 추가
+
+                const randomImg = document.createElement('img');
+                randomImg.src = pair.random;
+                randomImg.alt = '랜덤 이미지';
+                randomImg.classList.add('random-image'); // 클래스 추가
+
+                pairDiv.appendChild(screenshot);
+                pairDiv.appendChild(randomImg); // random-image를 직접 추가
+                archiveContainer.appendChild(pairDiv);
+            });
+        };
+
+        request.onerror = (event) => {
+            console.error('이미지 불러오기 실패:', event);
+        };
+    }
+
+    // 주기적으로 로컬 스토리지 업데이트 감지 (비활성화)
+    setInterval(loadImages, 1000); // 1초마다 업데이트
+</script>
+
+</body>
+</html>

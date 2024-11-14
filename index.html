@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>find 🧑‍🦲</title>
+    <style>
+        body { margin: 0; }
+        .bg {
+            width: 100vw;
+            position: absolute;
+            z-index: -10;
+        }
+        #webcam {
+    position: absolute;
+    top: 10%;
+    left: 5%;
+    width: 90vw;
+    height: 80vh;
+    object-fit: cover;
+    z-index: -1;
+    transform: scaleX(-1); /* 좌우 반전 */
+    clip-path: polygon(0% 25px, 25px 0%, calc(100% - 25px) 0%, 100% 25px, 100% calc(100% - 25px), calc(100% - 25px) 100%, 25px 100%, 0% calc(100% - 25px)); /* 모서리 25px 각지게 */}
+
+        #logo {
+            position: absolute;
+            bottom: 2%;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: pointer;
+        }
+
+        /* #E0FC61; */
+        #screenshotPopup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    background-color: #ffffff;
+    padding: 30px;
+    width: 340px;
+    height: 400px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    overflow: hidden; /* 이미지가 넘치지 않도록 설정 */
+    clip-path: polygon(0% 10px, 10px 0%, calc(100% - 10px) 0%, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0% calc(100% - 10px)); /* 모서리 10px 각지게 */
+}
+
+#screenshotImage {
+    margin-top: 20px;
+    transform: scaleX(-1); 
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 3 / 3; /* 증명사진 비율 */
+    object-fit: cover; /* 비율 유지하며 잘라내기 */
+}
+
+        #randomImage {
+            margin-top: 15px;
+            height: 24px;
+            z-index: 100;
+            display: none;
+        }
+        #closeButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 30px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #E0FC61;
+        }
+        .gif {
+            position: absolute;
+            width: 12vw;
+            cursor: pointer; /* 클릭 가능한 스타일 추가 */
+        }
+        .back{
+            position: fixed;
+            bottom: -60vh;
+            width:150vw;
+            z-index: -999;
+        } #redLine {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 90%;
+    width: 3px;
+    margin-top: 20px;
+    background-color: #ff0000;
+    animation: slideRight 2s ease forwards;
+}
+
+@keyframes slideRight {
+    0% {
+        left: 0;
+        opacity: 1;
+    }
+    100% {
+        left: 100%;
+        opacity: 0;
+    }
+}
+    </style>
+</head>
+<body>
+
+    <video id="webcam" autoplay playsinline muted></video>
+    <img id="logo" src="logo.png" alt="Logo" width="100">
+    
+    <img src="cx-side.gif" class="gif" style="bottom: 2vh; left: 14vw;">
+    <img src="id-side.gif" class="gif" style="bottom: 4vh; left: 30vw;">
+    <img src="ux-side.gif" class="gif" style="bottom: 2vh; right: 12vw;">
+    <img src="ill-side.gif" class="gif" style="bottom: 0vh; right:0vw;">
+    <img src="vi-side.gif" class="gif" style="bottom: 6vh; left: 0vw;">
+    <img src="ed-side.gif" class="gif" style="bottom: 0vh; left: 60vw;">
+    <img src="bg.png" class="back">
+    
+    <div id="screenshotPopup">
+        <button id="closeButton">X</button>
+        <div style="position: relative;">
+            <img id="screenshotImage" alt="스크린샷">
+            <div id="redLine"></div> <!-- 빨간 선 추가 -->
+        </div>
+        <img id="randomImage" alt="랜덤 이미지">
+    </div>
+
+    <script>
+        // IndexedDB 초기화
+        let db;
+
+        const request = indexedDB.open('myDatabase', 1);
+
+        request.onupgradeneeded = (event) => {
+            db = event.target.result;
+            db.createObjectStore('images', { keyPath: 'id' });
+        };
+
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            console.log('데이터베이스 열기 성공');
+        };
+
+        request.onerror = (event) => {
+            console.error('데이터베이스 열기 실패:', event);
+        };
+
+        // 웹캠 스트리밍 설정
+        const video = document.getElementById('webcam');
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { video.srcObject = stream; })
+            .catch(err => console.error('웹캠 접근 불가:', err));
+
+        // 이미지 저장 함수
+        function saveImage(screenshotSrc, randomImgSrc) {
+            const transaction = db.transaction(['images'], 'readwrite');
+            const objectStore = transaction.objectStore('images');
+
+            const imageData = {
+                id: Date.now(),
+                screenshot: screenshotSrc,
+                random: randomImgSrc
+            };
+
+            const request = objectStore.add(imageData);
+
+            request.onsuccess = () => {
+                console.log('이미지 저장 성공:', imageData);
+            };
+
+            request.onerror = (event) => {
+                console.error('이미지 저장 실패:', event);
+            };
+        }
+
+        // 로고 클릭 이벤트
+        logo.addEventListener('click', () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const screenshotSrc = canvas.toDataURL('image/png');
+
+    const images = ['1.png', '2.png', '3.png', '4.png', '5.png', '6.png', '7.png', '8.png', '10.png', 
+        '11.png', '12.png', '13.png', '14.png', '15.png', '16.png', '17.png', '18.png', 
+        '19.png', '20.png', '21.png', '22.png', '23.png', '24.png', '25.png', '26.png', 
+        '27.png', '29.png', '30.png', '31.png', '32.png', '33.png', '34.png', 
+        '35.png', '36.png', '37.png'];
+    const randomImgSrc = images[Math.floor(Math.random() * images.length)];
+
+    screenshotImage.src = screenshotSrc;
+    randomImage.src = randomImgSrc;
+
+    screenshotPopup.style.display = 'flex';
+    screenshotImage.style.opacity = '0'; // 처음에 opacity 0으로 설정
+    randomImage.style.display = 'none'; // 랜덤 이미지를 숨김
+
+    // 3초 후에 randomImage를 표시하고 screenshotImage의 opacity를 1로 변경
+    setTimeout(() => {
+        randomImage.style.display = 'block';  // randomImage를 보이도록 설정
+        screenshotImage.style.opacity = '1';  // 0.3초 후에 opacity를 1로 변경
+    }, 2000); // 3초 후에
+
+    saveImage(screenshotSrc, randomImgSrc);
+});
+        screenshotImage.onload = () => {
+        // #screenshotImage의 높이를 기준으로 #redLine의 높이를 조정
+        const screenshotHeight = screenshotImage.offsetHeight;
+        redLine.style.height = `${screenshotHeight * 1}px`; // 90% 높이로 설정
+    };
+        // 팝업 닫기 버튼 이벤트
+        closeButton.addEventListener('click', () => {
+            screenshotPopup.style.display = 'none';
+        });
+
+        // .gif 클릭 시 archive.index 페이지로 이동
+        document.querySelectorAll('.gif').forEach(gif => {
+            gif.addEventListener('click', () => {
+                window.open('archive.html', '_blank'); // 새 탭에서 페이지 열기
+            });
+        });
+    </script>
+</body>
+</html>
